@@ -2,102 +2,149 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base mobile-first styles */
 @layer base {
     html {
         -webkit-text-size-adjust: 100%;
         -moz-text-size-adjust: 100%;
         text-size-adjust: 100%;
         -webkit-tap-highlight-color: transparent;
+        scroll-behavior: smooth;
     }
 
     body {
         @apply bg-kyc-bg text-kyc-text antialiased;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* Ensure minimum tap target sizes on mobile */
-    input,
-    select,
-    textarea,
-    button {
+    input, select, textarea, button {
         @apply min-h-tap;
     }
 
     /* Prevent iOS zoom on input focus */
-    input,
-    select,
-    textarea {
+    input, select, textarea {
         font-size: 16px !important;
     }
 
-    /* Custom scrollbar for webkit browsers */
-    ::-webkit-scrollbar {
-        width: 4px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: #CBD5E1;
-        border-radius: 2px;
-    }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { @apply bg-kyc-border-dark rounded-full; }
 }
 
 @layer components {
 
-    /* Form input base style */
-    .form-input-mobile {
-        @apply w-full min-h-tap px-4 py-3 text-input text-kyc-text bg-kyc-card border border-kyc-border rounded-xl focus:outline-none focus:ring-2 focus:ring-kyc-primary focus:border-kyc-primary transition-colors appearance-none;
+    /* ── Cards ─────────────────────────────────────────────────────────── */
+    .premium-card {
+        @apply bg-kyc-card rounded-2xl border border-kyc-border shadow-card-md p-6 lg:p-8;
     }
 
-    /* Card container */
-    .card-mobile {
-        @apply bg-kyc-card rounded-2xl border border-kyc-border p-4 sm:p-6;
+    /* ── Form field labels ─────────────────────────────────────────────── */
+    .field-label {
+        @apply block text-xs font-bold text-kyc-muted uppercase tracking-wider mb-2;
     }
 
-    /* Primary button */
-    .btn-primary-mobile {
-        @apply w-full min-h-tap py-4 px-6 text-base font-bold text-white bg-kyc-primary rounded-xl active:bg-kyc-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-kyc-primary/25 flex items-center justify-center gap-2;
+    /* ── Inputs ────────────────────────────────────────────────────────── */
+    .field-input {
+        @apply w-full min-h-tap px-4 py-3 text-input text-kyc-text bg-white border border-kyc-border
+               rounded-xl focus:outline-none focus:ring-2 focus:ring-kyc-primary/25 focus:border-kyc-primary
+               transition-all duration-200 appearance-none placeholder:text-kyc-muted-2;
     }
 
-    /* Secondary button */
-    .btn-secondary-mobile {
-        @apply w-full min-h-tap py-4 px-6 text-base font-semibold text-kyc-primary bg-kyc-primary/5 border border-kyc-primary/20 rounded-xl active:bg-kyc-primary/10 transition-colors;
+    .field-input-error {
+        @apply w-full min-h-tap px-4 py-3 text-input text-kyc-text bg-white border-2 border-kyc-danger
+               rounded-xl focus:outline-none focus:ring-2 focus:ring-kyc-danger/20
+               transition-all duration-200 appearance-none placeholder:text-kyc-muted-2;
     }
 
-    /* Select wrapper for custom dropdown arrow */
-    .select-mobile {
-        @apply form-input-mobile bg-no-repeat bg-[right_1rem_center] pr-10;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748B' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    /* ── Selects ───────────────────────────────────────────────────────── */
+    .field-select {
+        @apply field-input cursor-pointer bg-no-repeat bg-[right_1rem_center] pr-10;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    }
+
+    .field-select-error {
+        @apply field-input-error cursor-pointer bg-no-repeat bg-[right_1rem_center] pr-10;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23DC2626' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    }
+
+    /* ── Field error text ─────────────────────────────────────────────── */
+    .field-error {
+        @apply text-kyc-danger text-xs mt-1.5 min-h-[18px] flex items-center gap-1;
+    }
+
+    /* ── Buttons ───────────────────────────────────────────────────────── */
+    .btn-primary {
+        @apply w-full min-h-tap py-3.5 px-6 text-base font-semibold text-white
+               bg-gradient-btn rounded-xl shadow-card-md
+               hover:shadow-premium active:scale-[0.985]
+               disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:shadow-none
+               transition-all duration-200 flex items-center justify-center gap-2.5;
+    }
+
+    .btn-secondary {
+        @apply w-full min-h-tap py-3.5 px-6 text-base font-semibold text-kyc-primary
+               bg-kyc-primary-subtle border border-kyc-primary/25 rounded-xl
+               hover:bg-kyc-primary/10 hover:border-kyc-primary/40 active:scale-[0.985]
+               disabled:opacity-50 disabled:cursor-not-allowed
+               transition-all duration-200 flex items-center justify-center gap-2;
+    }
+
+    .btn-ghost {
+        @apply min-h-tap py-2.5 px-4 text-sm font-medium text-kyc-muted
+               hover:text-kyc-text hover:bg-kyc-bg-2 rounded-xl
+               transition-all duration-150 flex items-center justify-center gap-2;
+    }
+
+    /* ── Upload zones ──────────────────────────────────────────────────── */
+    .upload-zone {
+        @apply relative border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer
+               transition-all duration-200 select-none;
+    }
+
+    .upload-zone-idle {
+        @apply upload-zone border-kyc-border bg-kyc-bg/60
+               hover:border-kyc-primary/40 hover:bg-kyc-primary-subtle/30;
+    }
+
+    .upload-zone-dragging {
+        @apply upload-zone border-kyc-primary bg-kyc-primary-subtle/60 shadow-glow;
+        transform: scale(1.01);
+    }
+
+    .upload-zone-filled {
+        @apply upload-zone border-kyc-success bg-kyc-success-light/50;
+    }
+
+    /* ── Section divider inside forms ─────────────────────────────────── */
+    .form-section-header {
+        @apply flex items-center gap-3 pt-2;
+    }
+
+    .form-section-header span {
+        @apply text-xs font-bold text-kyc-muted uppercase tracking-widest whitespace-nowrap;
+    }
+
+    .form-section-header::after {
+        content: "";
+        @apply flex-1 h-px bg-kyc-border;
     }
 }
 
 @layer utilities {
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+    .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
 
-    /* Safe area padding for notched phones */
-    .pb-safe {
-        padding-bottom: env(safe-area-inset-bottom, 16px);
-    }
-
-    .pt-safe {
-        padding-top: env(safe-area-inset-top, 0px);
-    }
-
-    /* Hide scrollbar but keep functionality */
     .scrollbar-hide {
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-    .scrollbar-hide::-webkit-scrollbar {
-        display: none;
-    }
+    .tap-none { -webkit-tap-highlight-color: transparent; }
 
-    /* Touch-friendly tap highlight removal */
-    .tap-none {
-        -webkit-tap-highlight-color: transparent;
+    .text-gradient {
+        background: linear-gradient(135deg, #60A5FA, #A5B4FC);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
 }

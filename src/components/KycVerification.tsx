@@ -11,30 +11,61 @@ interface KycVerificationProps {
 }
 
 declare global {
-    interface Window {
-        snsWebSdk?: any;
-    }
+    interface Window { snsWebSdk?: any; }
+}
+
+function ShieldCheckIcon({ className = "w-6 h-6" }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}
+            strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <path d="m9 12 2 2 4-4" />
+        </svg>
+    );
+}
+
+function CheckCircleIcon({ className = "w-5 h-5" }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+            strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+    );
+}
+
+function ArrowRightIcon() {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+            strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+        </svg>
+    );
+}
+
+function AlertIcon({ className = "w-6 h-6" }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+            strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+    );
 }
 
 export default function KycVerification({
-    accessToken,
-    userId,
-    onComplete,
-    onError,
+    accessToken, userId, onComplete, onError,
 }: KycVerificationProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
-    // Set to true once Sumsub reports the documents have been submitted / reviewed.
-    // Only then do we surface the "Continue" button — the user must click it explicitly.
     const [canContinue, setCanContinue] = useState(false);
     const [continueStatus, setContinueStatus] = useState<"GREEN" | "RED" | "processing">("processing");
     const initializedRef = useRef(false);
 
     const initWebSDK = useCallback(() => {
         if (!window.snsWebSdk || !accessToken) return;
-
-        console.log("Launching Sumsub WebSDK...");
-
         try {
             const snsWebSdkInstance = window.snsWebSdk
                 .init(
@@ -51,15 +82,10 @@ export default function KycVerification({
                 )
                 .withConf({ lang: "en" })
                 .on("idCheck.onApplicantLoaded", () => {
-                    console.log("SDK: Applicant Loaded");
                     setIsLoading(false);
                 })
                 .on("idCheck.onApplicantStatusChanged", (payload: any) => {
-                    console.log("SDK: Status Changed", payload);
                     const reviewStatus = payload?.reviewStatus;
-                    // Any status except "init" means the user has submitted their documents
-                    // (or they were already submitted in a previous session).
-                    // We reveal the Continue button but do NOT auto-advance — the user must click.
                     if (reviewStatus && reviewStatus !== "init") {
                         const answer = payload?.reviewResult?.reviewAnswer;
                         const status: "GREEN" | "RED" | "processing" =
@@ -70,16 +96,14 @@ export default function KycVerification({
                         setCanContinue(true);
                     }
                 })
-                .on("idCheck.onError", (error: any) => {
-                    console.error("SDK Error Event:", error);
+                .on("idCheck.onError", (_error: any) => {
                     onError("Verification error occurred. Please try again.");
                 })
                 .build();
 
             snsWebSdkInstance.launch("#sumsub-websdk-container");
-        } catch (error) {
-            console.error("SDK Init Failed:", error);
-            setLoadError("Failed to initialize verification. Please refresh.");
+        } catch {
+            setLoadError("Failed to initialize verification. Please refresh the page.");
         }
     }, [accessToken, userId, onError]);
 
@@ -87,59 +111,38 @@ export default function KycVerification({
         if (initializedRef.current) return;
         initializedRef.current = true;
 
-        const SCRIPT_URL =
-            "https://static.sumsub.com/idensic/static/sns-websdk-builder.js";
+        const SCRIPT_URL = "https://static.sumsub.com/idensic/static/sns-websdk-builder.js";
 
-        // If the SDK global already exists (React Strict Mode remounts the
-        // component after the first mount's cleanup, but the script and the
-        // window.snsWebSdk object survive), skip reloading the script and
-        // initialise directly.
-        if (window.snsWebSdk) {
-            initWebSDK();
-            return;
-        }
+        if (window.snsWebSdk) { initWebSDK(); return; }
 
-        // If the <script> tag is already in the DOM but not yet executed
-        // (unlikely, but safe to handle), wait for its load event.
-        const existingScript = document.querySelector<HTMLScriptElement>(
-            `script[src="${SCRIPT_URL}"]`
-        );
-        if (existingScript) {
-            existingScript.addEventListener("load", initWebSDK);
-            return;
-        }
+        const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${SCRIPT_URL}"]`);
+        if (existingScript) { existingScript.addEventListener("load", initWebSDK); return; }
 
-        // First time: inject the script.
         const script = document.createElement("script");
         script.src = SCRIPT_URL;
         script.async = true;
-        script.onload = () => {
-            console.log("Sumsub script injected");
-            initWebSDK();
-        };
-        script.onerror = () => {
-            setLoadError("Connection to verification server failed.");
-        };
+        script.onload = () => initWebSDK();
+        script.onerror = () => setLoadError("Connection to verification server failed. Please check your network.");
         document.head.appendChild(script);
 
         return () => {
             if (window.snsWebSdk && typeof window.snsWebSdk.destroy === "function") {
-                try { window.snsWebSdk.destroy(); } catch (e) { }
+                try { window.snsWebSdk.destroy(); } catch { /* ignore */ }
             }
         };
     }, [initWebSDK]);
 
+    /* ── Error state ─────────────────────────────────────────── */
     if (loadError) {
         return (
-            <div className="card-mobile p-8 text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mb-4">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
+            <div className="premium-card text-center py-10">
+                <div className="w-14 h-14 rounded-2xl bg-kyc-danger-light flex items-center justify-center mx-auto mb-4">
+                    <AlertIcon className="w-7 h-7 text-kyc-danger" />
                 </div>
-                <p className="text-gray-800 font-medium">{loadError}</p>
-                <button onClick={() => window.location.reload()} className="mt-4 btn-primary-mobile">
-                    Retry
+                <h3 className="font-bold text-kyc-text mb-2">Connection Failed</h3>
+                <p className="text-sm text-kyc-muted mb-6 max-w-xs mx-auto">{loadError}</p>
+                <button onClick={() => window.location.reload()} className="btn-primary max-w-xs mx-auto">
+                    Try Again
                 </button>
             </div>
         );
@@ -149,38 +152,54 @@ export default function KycVerification({
         <div className="w-full space-y-4">
             {/* Loading banner */}
             {isLoading && (
-                <div className="flex items-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-lg">
-                    <div className="w-4 h-4 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm font-medium">Initializing secure session...</span>
+                <div className="premium-card flex flex-col items-center py-12 text-center animate-fade-in">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-btn flex items-center justify-center mb-5 shadow-premium">
+                        <ShieldCheckIcon className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="w-7 h-7 border-2 border-kyc-border border-t-kyc-primary rounded-full animate-spin mb-4" />
+                    <p className="font-semibold text-kyc-text">Initialising Secure Session</p>
+                    <p className="text-sm text-kyc-muted mt-1.5 max-w-xs">
+                        Setting up end-to-end encrypted identity verification
+                    </p>
+                    <div className="flex items-center gap-4 mt-6">
+                        {["Encrypted", "Secure", "Verified"].map((label) => (
+                            <div key={label} className="flex items-center gap-1.5 text-xs text-kyc-muted">
+                                <span className="w-1.5 h-1.5 rounded-full bg-kyc-success inline-block" />
+                                {label}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 
             {/* Sumsub WebSDK container */}
             <div
                 id="sumsub-websdk-container"
-                className={`w-full bg-white rounded-xl overflow-hidden border border-gray-200 transition-opacity duration-500 ${
-                    isLoading ? "opacity-0 h-0" : "opacity-100 min-h-[700px]"
-                }`}
+                className={`w-full bg-white rounded-2xl overflow-hidden border border-kyc-border shadow-card-md
+                    transition-all duration-500
+                    ${isLoading ? "opacity-0 h-0 pointer-events-none" : "opacity-100 min-h-[680px]"}`}
             />
 
-            {/* Continue button — only shown after Sumsub confirms documents submitted */}
+            {/* Continue card — shown after documents submitted */}
             {canContinue && (
-                <div className="card-mobile">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-full bg-kyc-success/10 flex items-center justify-center flex-shrink-0">
-                            <svg className="w-4 h-4 text-kyc-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                <div className="premium-card animate-slide-up">
+                    <div className="flex items-start gap-4 mb-5">
+                        <div className="w-10 h-10 rounded-xl bg-kyc-success-light flex items-center justify-center flex-shrink-0">
+                            <CheckCircleIcon className="w-5 h-5 text-kyc-success" />
                         </div>
-                        <p className="text-sm font-medium text-kyc-text">
-                            Identity documents submitted. Continue to upload your bank statement.
-                        </p>
+                        <div className="pt-0.5">
+                            <p className="font-semibold text-kyc-text leading-snug">Documents Submitted</p>
+                            <p className="text-sm text-kyc-muted mt-1">
+                                Your identity documents have been submitted successfully. Continue to upload your remaining verification documents.
+                            </p>
+                        </div>
                     </div>
                     <button
                         onClick={() => onComplete(continueStatus)}
-                        className="w-full min-h-tap py-3 px-4 bg-kyc-primary text-white font-medium rounded-xl hover:bg-kyc-primary-hover active:scale-[0.98] transition-all"
+                        className="btn-primary"
                     >
-                        Continue to Next Step →
+                        Continue to Next Step
+                        <ArrowRightIcon />
                     </button>
                 </div>
             )}
