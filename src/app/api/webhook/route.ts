@@ -5,6 +5,7 @@ import {
     updateVerificationStatus,
 } from "@/lib/db";
 import { SumsubWebhookPayload } from "@/lib/types";
+import { logAuditEvent } from "@/lib/db-audit";
 
 /**
  * POST /api/webhook
@@ -74,6 +75,25 @@ export async function POST(request: NextRequest) {
                     status,
                     body.inspectionId
                 );
+
+                // Log audit event so agents can see the Sumsub result
+                const contactId = (record as Record<string, unknown>).contact_id as string | null;
+                const agentId = (record as Record<string, unknown>).agent_id as string | null;
+                if (contactId) {
+                    logAuditEvent({
+                        agentId,
+                        contactId,
+                        actorType: "system",
+                        actorId: "sumsub",
+                        eventType: "contact.kyc.sumsub_result",
+                        eventData: {
+                            reviewAnswer: status,
+                            rejectLabels: body.reviewResult?.rejectLabels ?? [],
+                            reviewRejectType: body.reviewResult?.reviewRejectType,
+                            applicantId: body.applicantId,
+                        },
+                    });
+                }
 
                 console.log(
                     `Verification status updated to ${status} for applicant: ${body.applicantId}`

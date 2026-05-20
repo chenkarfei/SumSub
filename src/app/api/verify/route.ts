@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import {
     createVerificationRecord,
+    getVerificationByContactId,
     getVerificationByUserId,
     updateApplicantId,
     deleteVerificationByUserId,
     resetDocumentUploads,
     updatePersonalInfo,
+    updateKycSessionId,
     formatVerificationRecord,
 } from "@/lib/db";
 import {
@@ -15,6 +17,8 @@ import {
     resetApplicant,
 } from "@/lib/sumsub";
 import { UserInfo, SUMSUB_LEVEL_NAME } from "@/lib/types";
+import { getContactSession } from "@/lib/session";
+import { logAuditEvent } from "@/lib/db-audit";
 
 const REQUIRED_FIELDS: (keyof UserInfo)[] = [
     "firstName", "lastName", "dateOfBirth", "nationality",
@@ -23,38 +27,37 @@ const REQUIRED_FIELDS: (keyof UserInfo)[] = [
 
 export async function POST(request: NextRequest) {
     try {
-        const body: Partial<UserInfo> = await request.json();
-        const email = body.email?.toLowerCase().trim();
-
-        if (!email) {
-            return NextResponse.json({ error: "Email is required" }, { status: 400 });
+        // Require contact session
+        const session = await getContactSession(request);
+        if (!session) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const userId = email;
+        const body: Partial<UserInfo> = await request.json();
 
-        // Determine if this is a full form submission (all fields present) or
-        // just a token refresh (only email, used by KycVerification / session resume).
-        const isFullSubmission = REQUIRED_FIELDS.every(f => !!(body as any)[f]);
+        // Identity comes from session, not from the form body
+        const contactId = session.contactId;
+        const agentId = session.agentId;
+        const userId = contactId; // use contactId as the stable DB key
 
-        const existingRecord = getVerificationByUserId(userId);
+        const isFullSubmission = REQUIRED_FIELDS.every(f => !!(body as Record<string, unknown>)[f]);
+
+        // Look up by contact_id (new) or fall back to user_id for legacy records
+        let existingRecord = getVerificationByContactId(contactId)
+            ?? (body.email ? getVerificationByUserId(body.email.toLowerCase().trim()) : undefined);
         let formattedRecord = existingRecord ? formatVerificationRecord(existingRecord) : null;
 
         // ── EXISTING APPLICANT ────────────────────────────────────────────────
         if (formattedRecord?.applicantId) {
-
             if (isFullSubmission) {
-                // Fresh form submit: reset the Sumsub applicant so the user goes
-                // through IC → Selfie → Proof of Address again from scratch.
                 try {
                     await resetApplicant(formattedRecord.applicantId);
                 } catch {
-                    // If reset fails, wipe the record and fall through to create a new one.
                     deleteVerificationByUserId(userId);
                     formattedRecord = null;
                 }
 
                 if (formattedRecord) {
-                    // Update personal info in case anything changed.
                     updatePersonalInfo(userId, {
                         firstName: body.firstName!.trim(),
                         lastName: body.lastName!.trim(),
@@ -65,32 +68,27 @@ export async function POST(request: NextRequest) {
                         sourceOfFunds: body.sourceOfFunds!,
                         sourceOfWealth: body.sourceOfWealth!,
                     });
-
-                    // Clear previously uploaded documents and reset status.
                     resetDocumentUploads(userId);
+                    updateKycSessionId(contactId, session.sessionId);
 
-                    // Generate fresh token using the externalUserId (email).
-                    const accessToken = await generateAccessToken(userId, SUMSUB_LEVEL_NAME);
-                    const updatedRecord = formatVerificationRecord(getVerificationByUserId(userId));
-
-                    return NextResponse.json({
-                        record: updatedRecord,
-                        accessToken: accessToken.token,
+                    logAuditEvent({
+                        agentId,
+                        contactId,
+                        actorType: "contact",
+                        actorId: contactId,
+                        eventType: "contact.kyc.step_started",
+                        eventData: { step: "personal_details_resubmit" },
                     });
-                }
-                // else: fall through to create a brand-new applicant below.
 
+                    const accessToken = await generateAccessToken(userId, SUMSUB_LEVEL_NAME);
+                    const updatedRecord = formatVerificationRecord(getVerificationByContactId(contactId));
+                    return NextResponse.json({ record: updatedRecord, accessToken: accessToken.token });
+                }
             } else {
-                // Token-refresh path: session resume or SDK internal token callback.
-                // Do NOT reset anything — just return a fresh token.
                 try {
                     const accessToken = await generateAccessToken(userId, SUMSUB_LEVEL_NAME);
-                    return NextResponse.json({
-                        record: formattedRecord,
-                        accessToken: accessToken.token,
-                    });
+                    return NextResponse.json({ record: formattedRecord, accessToken: accessToken.token });
                 } catch {
-                    // Token generation failed — wipe stale record and fall through.
                     deleteVerificationByUserId(userId);
                     formattedRecord = null;
                 }
@@ -98,27 +96,25 @@ export async function POST(request: NextRequest) {
         }
 
         // ── NEW APPLICANT ─────────────────────────────────────────────────────
-        // Validate all required fields before creating.
         for (const field of REQUIRED_FIELDS) {
-            if (!(body as any)[field]) {
-                return NextResponse.json(
-                    { error: `Missing required field: ${field}` },
-                    { status: 400 }
-                );
+            if (!(body as Record<string, unknown>)[field]) {
+                return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
             }
         }
 
-        // Clean up any orphaned record without an applicantId.
         if (existingRecord && !formattedRecord?.applicantId) {
             deleteVerificationByUserId(userId);
         }
 
-        let applicantData: { id: string };
+        // Use agentId:contactId as externalUserId so Sumsub entries are scoped per agent
+        const externalUserId = `${agentId}:${contactId}`;
+
+        let applicantData: { id: string } | null = null;
         try {
             applicantData = await createApplicant(
-                userId,   // externalUserId = email
+                externalUserId,
                 {
-                    email: userId,
+                    email: body.email!,
                     phone: body.phone!,
                     firstName: body.firstName!,
                     lastName: body.lastName!,
@@ -127,11 +123,23 @@ export async function POST(request: NextRequest) {
                 },
                 SUMSUB_LEVEL_NAME
             );
-        } catch (error: any) {
-            return NextResponse.json(
-                { error: `Verification Setup Failed: ${error.message || "Unknown error"}` },
-                { status: 500 }
-            );
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : "Unknown error";
+            // 409 means Sumsub already has this applicant — recover the existing ID silently
+            if (msg.includes("409")) {
+                try {
+                    const jsonStart = msg.indexOf("{");
+                    const parsed = JSON.parse(msg.slice(jsonStart));
+                    const match = (parsed.description as string)?.match(/already exists:\s*(\w+)/);
+                    if (match) applicantData = { id: match[1] };
+                } catch { /* fall through to error below */ }
+            }
+            if (!applicantData) {
+                const friendly = msg.includes("409")
+                    ? "A verification record for this contact already exists. Please refresh and try again."
+                    : "Unable to start verification. Please try again or contact support.";
+                return NextResponse.json({ error: friendly }, { status: 500 });
+            }
         }
 
         const recordId = uuidv4();
@@ -142,28 +150,34 @@ export async function POST(request: NextRequest) {
             lastName: body.lastName!.trim(),
             dateOfBirth: body.dateOfBirth!,
             nationality: body.nationality!,
-            email: userId,
+            email: body.email!,
             phone: body.phone!.trim(),
             countryOfResidence: body.countryOfResidence!,
             sourceOfFunds: body.sourceOfFunds!,
             sourceOfWealth: body.sourceOfWealth!,
+            contactId,
+            agentId,
+            kycSessionId: session.sessionId,
         });
 
-        updateApplicantId(userId, applicantData.id);
+        updateApplicantId(userId, applicantData!.id);
 
-        // Generate token using the externalUserId (email) — NOT the internal applicant ID.
-        const accessToken = await generateAccessToken(userId, SUMSUB_LEVEL_NAME);
-        const finalRecord = formatVerificationRecord(getVerificationByUserId(userId));
-
-        return NextResponse.json({
-            record: finalRecord,
-            accessToken: accessToken.token,
+        logAuditEvent({
+            agentId,
+            contactId,
+            actorType: "contact",
+            actorId: contactId,
+            eventType: "contact.kyc.step_started",
+            eventData: { step: "personal_details", applicantId: applicantData!.id },
         });
+
+        const accessToken = await generateAccessToken(externalUserId, SUMSUB_LEVEL_NAME);
+        const finalRecord = formatVerificationRecord(getVerificationByContactId(contactId));
+
+        return NextResponse.json({ record: finalRecord, accessToken: accessToken.token });
 
     } catch (error) {
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
+        console.error("[verify]", error);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }

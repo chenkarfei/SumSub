@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback } from "react";
 
 interface AgreementUploadProps {
-    userId: string;
+    userId: string; // kept for backward compat with page.tsx callers
     onComplete: () => void;
 }
 
@@ -61,12 +61,40 @@ function ArrowRightIcon() {
     );
 }
 
-export default function AgreementUpload({ userId, onComplete }: AgreementUploadProps) {
+export default function AgreementUpload({ onComplete }: AgreementUploadProps) {
     const [file, setFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [downloadError, setDownloadError] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    const handleDownloadTemplate = async () => {
+        setDownloadError(null);
+        setIsDownloading(true);
+        try {
+            const res = await fetch("/api/agreement/template");
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                setDownloadError(data.error || "Template not available. Please contact your agent.");
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "agreement-template.pdf";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch {
+            setDownloadError("Failed to download template. Please try again.");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
     const validateAndSet = (f: File) => {
         setError(null);
@@ -100,10 +128,7 @@ export default function AgreementUpload({ userId, onComplete }: AgreementUploadP
         try {
             const form = new FormData();
             form.append("file", file);
-            const res = await fetch(
-                `/api/upload?userId=${encodeURIComponent(userId)}&documentType=agreement`,
-                { method: "POST", body: form }
-            );
+            const res = await fetch("/api/upload?documentType=agreement", { method: "POST", body: form });
             const data = await res.json();
             if (!res.ok) { setError(data.error || "Upload failed. Please try again."); return; }
             onComplete();
@@ -138,14 +163,30 @@ export default function AgreementUpload({ userId, onComplete }: AgreementUploadP
                 </div>
             </div>
 
-            {/* Description */}
-            <div className="p-3.5 bg-kyc-bg-2 border border-kyc-border rounded-xl">
+            {/* Step 1 — Download template */}
+            <div className="p-4 bg-kyc-bg-2 border border-kyc-border rounded-xl space-y-3">
+                <p className="text-xs font-semibold text-kyc-text uppercase tracking-wide">Step 1 — Download &amp; Sign</p>
                 <p className="text-xs text-kyc-muted leading-relaxed">
-                    Please upload your
-                    <strong className="text-kyc-text-2"> signed agreement document</strong>.
-                    This is the final step to complete your KYC verification.
+                    Download the agreement template, print or sign it digitally, then upload it below.
                 </p>
+                {downloadError && (
+                    <p className="text-xs text-kyc-danger">{downloadError}</p>
+                )}
+                <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    disabled={isDownloading}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-kyc-primary/15 border border-kyc-primary/30 text-kyc-primary text-sm font-medium hover:bg-kyc-primary/25 transition-colors"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    {isDownloading ? "Downloading…" : "Download Agreement Template"}
+                </button>
             </div>
+
+            {/* Step 2 label */}
+            <p className="text-xs font-semibold text-kyc-text uppercase tracking-wide px-0.5">Step 2 — Upload Signed Copy</p>
 
             {/* Drop zone */}
             <div

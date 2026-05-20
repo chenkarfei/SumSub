@@ -37,6 +37,47 @@ export interface VerificationRecord {
     updatedAt: string;
 }
 
+export interface Agent {
+    id: string;
+    subdomain: string;
+    username: string;
+    name: string;
+    email: string;
+    isActive: boolean;
+    agreementTemplatePath: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Contact {
+    id: string;
+    agentId: string;
+    email: string;
+    name: string | null;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Admin {
+    id: string;
+    username: string;
+    name: string;
+    createdAt: string;
+}
+
+export interface AuditLogEntry {
+    id: string;
+    agentId: string | null;
+    contactId: string | null;
+    actorType: "admin" | "agent" | "contact" | "system";
+    actorId: string;
+    eventType: string;
+    eventData: Record<string, unknown> | null;
+    ipAddress: string | null;
+    createdAt: string;
+}
+
 export interface SumsubAccessTokenResponse {
     token: string;
     userId: string;

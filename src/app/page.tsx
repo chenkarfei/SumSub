@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import UserInfoForm from "@/components/UserInfoForm";
 import KycVerification from "@/components/KycVerification";
 import ProofOfAddressUpload from "@/components/ProofOfAddressUpload";
@@ -78,7 +79,7 @@ function XCircleIcon({ className = "w-4 h-4" }: { className?: string }) {
 
 /* ── Desktop Sidebar ──────────────────────────────────────────────────── */
 
-function Sidebar({ step }: { step: AppStep }) {
+function Sidebar({ step, onLogout }: { step: AppStep; onLogout: () => void }) {
     const currentIdx = STEP_INDEX[step];
 
     return (
@@ -156,6 +157,17 @@ function Sidebar({ step }: { step: AppStep }) {
                         </div>
                     ))}
                 </div>
+                <div className="mt-3">
+                    <button
+                        onClick={onLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-white/55 hover:text-white hover:bg-white/[0.08] transition-colors"
+                    >
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Sign out
+                    </button>
+                </div>
             </div>
         </aside>
     );
@@ -163,7 +175,7 @@ function Sidebar({ step }: { step: AppStep }) {
 
 /* ── Mobile header + progress bar ─────────────────────────────────────── */
 
-function MobileHeader({ step }: { step: AppStep }) {
+function MobileHeader({ step, onLogout }: { step: AppStep; onLogout: () => void }) {
     const currentIdx = STEP_INDEX[step];
     const isStatus = step === "status";
     const progress = isStatus ? 100 : (currentIdx / STEPS.length) * 100;
@@ -178,13 +190,16 @@ function MobileHeader({ step }: { step: AppStep }) {
                     <span className="font-bold text-kyc-text text-sm tracking-tight">SecureVerify</span>
                 </div>
 
-                {!isStatus && (
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                    {!isStatus && (
                         <span className="text-xs font-semibold text-kyc-muted bg-kyc-bg-2 border border-kyc-border px-2.5 py-1 rounded-full">
                             {currentIdx + 1} / {STEPS.length}
                         </span>
-                    </div>
-                )}
+                    )}
+                    <button onClick={onLogout} className="text-xs text-kyc-muted hover:text-kyc-text transition-colors px-2 py-1">
+                        Sign out
+                    </button>
+                </div>
             </div>
 
             {/* Gradient progress bar */}
@@ -201,6 +216,7 @@ function MobileHeader({ step }: { step: AppStep }) {
 /* ── Main page ────────────────────────────────────────────────────────── */
 
 export default function Home() {
+    const router = useRouter();
     const [step, setStep] = useState<AppStep>("form");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -214,6 +230,19 @@ export default function Home() {
         const savedEmail = localStorage.getItem("kyc_user_email");
         if (savedEmail) fetchUserStatus(savedEmail);
     }, []);
+
+    // Heartbeat: ping every 30s to detect session expiry, timeout, or device change
+    useEffect(() => {
+        const id = setInterval(async () => {
+            try {
+                const res = await fetch("/api/auth/contact/heartbeat", { method: "POST" });
+                if (!res.ok) {
+                    router.push("/login?reason=expired");
+                }
+            } catch { /* network hiccup — next tick will retry */ }
+        }, 30_000);
+        return () => clearInterval(id);
+    }, [router]);
 
     const fetchUserStatus = useCallback(async (userId: string) => {
         try {
@@ -235,9 +264,12 @@ export default function Home() {
                 const poaDone = !!data.proofOfAddressPath;
                 const bankDone = !!data.bankStatementPath;
                 const agreementDone = !!data.agreementPath;
+                // Any uploaded document proves the user already completed Sumsub.
+                // We also treat GREEN/RED/RETRY webhook statuses as done.
                 const sumsubDone =
                     data.status === "GREEN" || data.status === "RED" ||
-                    data.sumsubStatus === "completed";
+                    data.status === "RETRY" ||
+                    poaDone || bankDone || agreementDone;
 
                 if (!sumsubDone) {
                     const verifyResp = await fetch("/api/verify", {
@@ -334,18 +366,23 @@ export default function Home() {
         setVerificationStatus(null);
     }, []);
 
+    const handleLogout = useCallback(async () => {
+        await fetch("/api/auth/contact/logout", { method: "POST" });
+        router.push("/login");
+    }, [router]);
+
     const currentStepMeta = step !== "status" ? STEPS[STEP_INDEX[step]] : null;
 
     return (
         <div className="min-h-screen flex bg-kyc-bg">
             {/* Desktop Sidebar */}
-            <Sidebar step={step} />
+            <Sidebar step={step} onLogout={handleLogout} />
 
             {/* Content wrapper */}
             <div className="flex-1 flex flex-col lg:ml-72 xl:ml-80">
 
                 {/* Mobile header */}
-                <MobileHeader step={step} />
+                <MobileHeader step={step} onLogout={handleLogout} />
 
                 {/* Page body */}
                 <main className="flex-1 px-4 py-6 lg:px-12 lg:py-12 xl:py-16">

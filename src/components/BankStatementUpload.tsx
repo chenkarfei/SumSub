@@ -98,7 +98,7 @@ export default function BankStatementUpload({ userId, onComplete }: BankStatemen
             const form = new FormData();
             form.append("file", file);
             const res = await fetch(
-                `/api/upload?userId=${encodeURIComponent(userId)}&documentType=bank_statement`,
+                `/api/upload?documentType=bank_statement`,
                 { method: "POST", body: form }
             );
             const data = await res.json();

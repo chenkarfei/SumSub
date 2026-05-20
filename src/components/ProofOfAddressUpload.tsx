@@ -97,7 +97,7 @@ export default function ProofOfAddressUpload({ userId, onComplete }: ProofOfAddr
             const form = new FormData();
             form.append("file", file);
             const res = await fetch(
-                `/api/upload?userId=${encodeURIComponent(userId)}&documentType=proof_of_address`,
+                `/api/upload?documentType=proof_of_address`,
                 { method: "POST", body: form }
             );
             const data = await res.json();
