@@ -1,0 +1,23 @@
+{
+  "name": "secureverify-kyc",
+  "version": "1.0.0",
+  "description": "SecureVerify KYC Portal – pure HTML/CSS/JS frontend with Express backend",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "init-db": "node scripts/init-db.js",
+    "reset-admin": "node scripts/reset-admin.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.10.0",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^2.7.0",
+    "uuid": "^9.0.1"
+  }
+}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Detail — KYC Admin</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+<div class="dashboard-layout">
+  <aside class="dashboard-sidebar">
+    <div class="dashboard-sidebar-deco-1"></div><div class="dashboard-sidebar-deco-2"></div>
+    <div class="dashboard-sidebar-inner">
+      <div class="dashboard-brand">
+        <div class="dashboard-brand-logo"><svg width="18" height="18" fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+        <div><div class="dashboard-brand-name">KYC Admin</div><div class="dashboard-brand-sub">Portal</div></div>
+      </div>
+      <nav class="dashboard-nav">
+        <a href="/admin/dashboard" class="nav-link active"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Agents</a>
+        <a href="/admin/dashboard/overview" class="nav-link"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</a>
+        </nav>
+      <div class="dashboard-sidebar-footer">
+        <button onclick="logoutAdmin()" class="kyc-sidebar-logout" style="width:100%"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>Sign out</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="dashboard-main">
+    <div class="detail-header">
+      <a href="/admin/dashboard" class="back-btn"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Agents</a>
+    </div>
+
+    <div id="content"><div style="text-align:center;padding:3rem"><div class="spinner" style="margin:0 auto"></div></div></div>
+  </main>
+</div>
+
+<!-- Reset Password Modal -->
+<div id="resetModal" class="modal-overlay hidden">
+  <div class="modal-backdrop" onclick="closeResetModal()"></div>
+  <div class="modal-box modal-light">
+    <h2 class="modal-title dark">Reset Password</h2>
+    <p class="modal-subtitle dark">Set a new password for this agent</p>
+    <div id="resetError" class="hidden" style="margin-bottom:1rem"></div>
+    <div><label class="modal-field-label dark" for="newPass">New Password *</label><input id="newPass" type="password" class="modal-input dark" placeholder="Min. 6 characters" /></div>
+    <div class="modal-actions">
+      <button onclick="closeResetModal()" class="modal-btn-cancel dark">Cancel</button>
+      <button id="resetConfirmBtn" onclick="confirmReset()" class="modal-btn-confirm">Update Password</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/utils.js"></script>
+<script src="/js/admin-agent.js"></script>
+
+<!-- Phase 2: user menu (avatar popover + change password modal) -->
+<script>window.KYC_ROLE = "admin";</script>
+<script src="/js/user-menu.js"></script>
+</body>
+</html>
