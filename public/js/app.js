@@ -32,6 +32,7 @@ setInterval(async () => {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
+  await Promise.resolve();
   const savedEmail = localStorage.getItem("kyc_user_email");
   if (savedEmail) {
     await fetchUserStatus(savedEmail);
