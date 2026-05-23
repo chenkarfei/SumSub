@@ -235,3 +235,13 @@ async function logoutContact() {
 function getParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
+
+// ── Dashboard mobile sidebar toggle ───────────────────────────────────────────
+function toggleMobileSidebar() {
+  const sidebar = document.querySelector('.dashboard-sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (!sidebar || !overlay) return;
+  const isOpen = sidebar.classList.toggle('open');
+  overlay.classList.toggle('open', isOpen);
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}

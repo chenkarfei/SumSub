@@ -9,7 +9,7 @@ let agentId   = null;
 (async function init() {
   agentId   = getParam("agentId");
   contactId = getParam("contactId");
-  if (!contactId) { window.location.href = "/admin/dashboard"; return; }
+  if (!contactId) { window.location.href = "/admin/dashboard/agents"; return; }
 
   const me = await fetch("/api/admin/me").catch(() => null);
   if (!me || me.status === 401) { window.location.href = "/admin/login"; return; }

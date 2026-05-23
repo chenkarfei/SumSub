@@ -22,7 +22,7 @@ app.use("/api/webhook", express.raw({ type: "application/json" }), (req, res, ne
 });
 
 // Static files
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static(path.join(__dirname, "../public"), { index: false, redirect: false }));
 
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use("/api/auth", require("./routes/auth"));
@@ -39,11 +39,12 @@ const PUBLIC = path.join(__dirname, "../public");
 app.get("/", (req, res) => res.sendFile(path.join(PUBLIC, "index.html")));
 app.get("/login", (req, res) => res.sendFile(path.join(PUBLIC, "login.html")));
 app.get("/admin/login", (req, res) => res.sendFile(path.join(PUBLIC, "admin/login.html")));
-app.get("/admin/dashboard", (req, res) => res.sendFile(path.join(PUBLIC, "admin/dashboard/index.html")));
+app.get("/admin/dashboard", (req, res) => res.sendFile(path.join(PUBLIC, "admin/dashboard/overview.html")));
+app.get("/admin/dashboard/agents", (req, res) => res.sendFile(path.join(PUBLIC, "admin/dashboard/index.html")));
 app.get("/admin/dashboard/agent", (req, res) => res.sendFile(path.join(PUBLIC, "admin/dashboard/agent.html")));
 app.get("/admin/dashboard/contact", (req, res) => res.sendFile(path.join(PUBLIC, "admin/dashboard/contact.html")));
-app.get("/admin/dashboard/overview", (req, res) => res.sendFile(path.join(PUBLIC, "admin/dashboard/overview.html")));
-app.get("/admin/dashboard/database", (req, res) => res.redirect(301, "/admin/dashboard/overview"));
+app.get("/admin/dashboard/overview", (req, res) => res.redirect(301, "/admin/dashboard"));
+app.get("/admin/dashboard/database", (req, res) => res.redirect(301, "/admin/dashboard"));
 // NOTE: /admin/dashboard/settings removed in Phase 2 — password change is now
 // handled via the user-menu popover (see public/js/user-menu.js). If a stale
 // bookmark hits this URL, the route falls through and the user is redirected

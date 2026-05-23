@@ -8,7 +8,7 @@ let agentData = null;
 
 (async function init() {
   agentId = getParam("id");
-  if (!agentId) { window.location.href = "/admin/dashboard"; return; }
+  if (!agentId) { window.location.href = "/admin/dashboard/agents"; return; }
 
   const me = await fetch("/api/admin/me").catch(() => null);
   if (!me || me.status === 401) { window.location.href = "/admin/login"; return; }
@@ -154,7 +154,7 @@ async function toggleContact(contactId, isActive) {
 async function deleteAgent() {
   if (!confirm(`Permanently delete "${agentData.name}" and all their contacts? This cannot be undone.`)) return;
   const res = await fetch(`/api/admin/agents/${agentId}`, { method: "DELETE" });
-  if (res.ok) window.location.href = "/admin/dashboard";
+  if (res.ok) window.location.href = "/admin/dashboard/agents";
   else alert("Failed to delete agent.");
 }
 

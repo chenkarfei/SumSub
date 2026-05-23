@@ -796,6 +796,7 @@ p  { font-size: 0.9375rem; line-height: 1.6; color: var(--kyc-muted); }
   background: var(--gradient-brand);
   overflow: hidden;
   z-index: 20;
+  transition: transform 0.25s ease;
 }
 
 .dashboard-sidebar-inner {
@@ -901,6 +902,42 @@ p  { font-size: 0.9375rem; line-height: 1.6; color: var(--kyc-muted); }
   margin-left: 224px;
   padding: 1.5rem;
   min-width: 0;
+}
+
+/* Dashboard mobile header */
+.dashboard-mobile-header {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--gradient-brand);
+  padding: 0.875rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Overlay when sidebar is open on mobile */
+.dashboard-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 19;
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .dashboard-mobile-header { display: flex; }
+
+  .dashboard-sidebar { transform: translateX(-100%); top: 64px; height: calc(100vh - 64px); }
+  .dashboard-sidebar.open { transform: translateX(0); }
+
+  .dashboard-sidebar-overlay { top: 64px; }
+  .dashboard-sidebar-overlay.open { display: block; }
+
+  .dashboard-main { margin-left: 0; padding: 1rem; }
+
+  .page-header { flex-wrap: wrap; }
 }
 
 /* ── Dashboard components ─────────────────────────────────────────────────── */
