@@ -236,6 +236,14 @@ function getParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
+// ── Mobile viewport height fix (Android nav bar) ──────────────────────────────
+// Sets --real-vh so sidebar height uses actual visible height, not 100vh
+function setRealVH() {
+  document.documentElement.style.setProperty('--real-vh', window.innerHeight * 0.01 + 'px');
+}
+setRealVH();
+window.addEventListener('resize', setRealVH);
+
 // ── Dashboard mobile sidebar toggle ───────────────────────────────────────────
 function toggleMobileSidebar() {
   const sidebar = document.querySelector('.dashboard-sidebar');
