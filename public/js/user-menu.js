@@ -92,7 +92,7 @@
         </button>
       </div>
     `;
-    footer.style.position = "relative";
+    // position set via CSS (.dashboard-sidebar-footer)
 
     // 3) Create shims for IDs that lived in the old sidebar footer.
     //    Done AFTER footer.innerHTML is replaced so getElementById no longer
