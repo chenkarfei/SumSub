@@ -1,3 +1,8 @@
+(async function checkSession() {
+  const res = await fetch("/api/admin/me").catch(() => null);
+  if (res && res.ok) window.location.href = "/admin/dashboard";
+})();
+
 document.getElementById("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
   const username = document.getElementById("username").value.trim();
