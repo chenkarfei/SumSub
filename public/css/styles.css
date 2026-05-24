@@ -930,11 +930,10 @@ p  { font-size: 0.9375rem; line-height: 1.6; color: var(--kyc-muted); }
 @media (max-width: 767px) {
   .dashboard-mobile-header { display: flex; }
 
-  /* Sidebar: --real-vh set by JS to actual visible height, excluding Android nav bar */
-  .dashboard-sidebar { transform: translateX(-100%); top: 64px; height: calc(var(--real-vh, 1vh) * 100 - 64px); overflow-y: auto; overflow-x: hidden; }
+  .dashboard-sidebar { transform: translateX(-100%); top: 64px; height: calc(100vh - 64px); }
   .dashboard-sidebar.open { transform: translateX(0); }
   .dashboard-sidebar .dashboard-brand { display: none; }
-  .dashboard-sidebar-inner { height: auto; min-height: 100%; padding-bottom: 16px; }
+  .dashboard-sidebar-inner { height: 100%; }
 
   .dashboard-sidebar-overlay { top: 64px; }
   .dashboard-sidebar-overlay.open { display: block; }
