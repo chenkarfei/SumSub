@@ -932,7 +932,7 @@ p  { font-size: 0.9375rem; line-height: 1.6; color: var(--kyc-muted); }
   .dashboard-sidebar { transform: translateX(-100%); top: 64px; height: calc(100vh - 64px); height: calc(100dvh - 64px); }
   .dashboard-sidebar.open { transform: translateX(0); }
   .dashboard-sidebar .dashboard-brand { display: none; }
-  .dashboard-sidebar-inner { overflow-y: auto; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+  .dashboard-sidebar-inner { overflow-y: auto; padding-bottom: 64px; }
 
   .dashboard-sidebar-overlay { top: 64px; }
   .dashboard-sidebar-overlay.open { display: block; }
