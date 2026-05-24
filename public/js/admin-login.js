@@ -1,7 +1,9 @@
-(async function checkSession() {
+async function checkAdminSession() {
   const res = await fetch("/api/admin/me").catch(() => null);
-  if (res && res.ok) window.location.href = "/admin/dashboard";
-})();
+  if (res && res.ok) window.location.replace("/admin/dashboard");
+}
+checkAdminSession();
+window.addEventListener("pageshow", e => { if (e.persisted) checkAdminSession(); });
 
 document.getElementById("loginForm").addEventListener("submit", async e => {
   e.preventDefault();

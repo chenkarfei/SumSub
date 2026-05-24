@@ -29,8 +29,9 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
   }
 });
 
-// If already logged in, redirect
-(async () => {
+async function checkContactSession() {
   const res = await fetch("/api/auth/contact/heartbeat", { method: "POST" }).catch(() => null);
-  if (res?.ok) window.location.href = "/";
-})();
+  if (res?.ok) window.location.replace("/");
+}
+checkContactSession();
+window.addEventListener("pageshow", e => { if (e.persisted) checkContactSession(); });

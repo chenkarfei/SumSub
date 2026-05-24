@@ -1,9 +1,11 @@
 /* Agent Login */
 
-(async function checkSession() {
+async function checkAgentSession() {
   const res = await fetch("/api/agent/me").catch(() => null);
-  if (res && res.ok) window.location.href = "/agent/dashboard";
-})();
+  if (res && res.ok) window.location.replace("/agent/dashboard");
+}
+checkAgentSession();
+window.addEventListener("pageshow", e => { if (e.persisted) checkAgentSession(); });
 
 document.getElementById("loginForm").addEventListener("submit", async e => {
   e.preventDefault();

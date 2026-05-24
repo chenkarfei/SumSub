@@ -37,8 +37,8 @@ app.use("/api/agreement", require("./routes/agreement"));
 const PUBLIC = path.join(__dirname, "../public");
 
 app.get("/", (req, res) => res.sendFile(path.join(PUBLIC, "index.html")));
-app.get("/login", (req, res) => res.sendFile(path.join(PUBLIC, "login.html")));
-app.get("/admin/login", (req, res) => res.sendFile(path.join(PUBLIC, "admin/login.html")));
+app.get("/login", (req, res) => { res.setHeader("Cache-Control", "no-store"); res.sendFile(path.join(PUBLIC, "login.html")); });
+app.get("/admin/login", (req, res) => { res.setHeader("Cache-Control", "no-store"); res.sendFile(path.join(PUBLIC, "admin/login.html")); });
 app.get("/admin/dashboard", (req, res) => res.sendFile(path.join(PUBLIC, "admin/dashboard/overview.html")));
 app.get("/admin/dashboard/agents", (req, res) => res.sendFile(path.join(PUBLIC, "admin/dashboard/index.html")));
 app.get("/admin/dashboard/agent", (req, res) => res.sendFile(path.join(PUBLIC, "admin/dashboard/agent.html")));
@@ -49,7 +49,7 @@ app.get("/admin/dashboard/database", (req, res) => res.redirect(301, "/admin/das
 // handled via the user-menu popover (see public/js/user-menu.js). If a stale
 // bookmark hits this URL, the route falls through and the user is redirected
 // to /admin/dashboard by the dashboard's own auth check.
-app.get("/agent/login", (req, res) => res.sendFile(path.join(PUBLIC, "agent/login.html")));
+app.get("/agent/login", (req, res) => { res.setHeader("Cache-Control", "no-store"); res.sendFile(path.join(PUBLIC, "agent/login.html")); });
 app.get("/agent/dashboard", (req, res) => res.sendFile(path.join(PUBLIC, "agent/dashboard/index.html")));
 app.get("/agent/dashboard/contact", (req, res) => res.sendFile(path.join(PUBLIC, "agent/dashboard/contact.html")));
 // /agent/dashboard/settings also removed.
