@@ -27,7 +27,7 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
       errDiv.classList.remove("hidden");
       setButtonLoading(btn, false);
     } else {
-      window.location.href = "/admin/dashboard";
+      window.location.replace("/admin/dashboard");
     }
   } catch {
     errDiv.innerHTML = `<div class="login-error">Network error. Please try again.</div>`;

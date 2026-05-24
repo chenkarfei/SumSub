@@ -29,7 +29,7 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
       errDiv.classList.remove("hidden");
       setButtonLoading(btn, false);
     } else {
-      window.location.href = "/agent/dashboard";
+      window.location.replace("/agent/dashboard");
     }
   } catch {
     errDiv.innerHTML = `<div class="login-error">Network error. Please try again.</div>`;
